@@ -1,11 +1,15 @@
 #include <WiFi.h>
 #include <WebServer.h>
+#include <ESP32Servo.h>
 
 const char* ssid = "Stain";
 const char* password = "b$VJ518175";
 char* door_status = "open";
 
+static const int servoPin = 3;
+
 WebServer server(80);
+Servo MyServo;
 
 void setup_routing() {     
   server.on("/close_door", close_door);     
@@ -20,11 +24,13 @@ void setup_routing() {
 void close_door(){
     Serial.println("Close Door");
     server.send(200, "text/plain", "door closed");
+    MyServo.write(0);
   }
 
 void open_door(){
     Serial.println("Open Door");
-    server.send(200, "text/plain", "open closed");
+    server.send(200, "text/plain", "door opened");
+    MyServo.write(180);
   }
 
 void getDoor_status(){
@@ -34,6 +40,7 @@ void getDoor_status(){
 
 void setup() {
    Serial.begin(115200);
+   MyServo.attach(servoPin);
    delay(1000);
 
    WiFi.mode(WIFI_STA); //Optional
