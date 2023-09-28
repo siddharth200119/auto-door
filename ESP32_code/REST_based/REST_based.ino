@@ -35,21 +35,20 @@ void PIR_data(){
   }
 
 void close_door(){
-    Serial.println("Close Door");
     server.send(200, "text/plain", "door closed");
-    MyServo.write(0);
+    MyServo.write(120);
+    door_status = "closed";
   }
 
 void open_door(){
-    Serial.println("Open Door");
     server.send(200, "text/plain", "door opened");
-    MyServo.write(180);
+    MyServo.write(0);
+    door_status = "open";
   }
 
 void getDoor_status(){
     Serial.println("Get Door Status");
     server.send(200, "text/plain", door_status);
-    MyServo.write(60);
   }
 
 void setup() {
@@ -63,13 +62,8 @@ void setup() {
    Serial.println("\nConnecting");
 
    while(WiFi.status() != WL_CONNECTED){
-       Serial.print(".");
        delay(100);
    }
-
-   Serial.println("\nConnected to the WiFi network");
-   Serial.print("Local ESP32 IP: ");
-   Serial.println(WiFi.localIP());
 
    setup_routing();
 }
