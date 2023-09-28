@@ -1,26 +1,37 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <ESP32Servo.h>
 
+//pins
+const int PIR_pin = 2;
+const int servo_pin = 3;
+int sensor_output;
+
+// WiFi
 const char* network_ssid = "Stain";
 const char* network_password = "b$VJ518175";
+
+//MQTT
 const char* mqtt_server = "192.168.1.6";
+const char* PIR_data = "home/sidd_room/doorside_esp32/motion_detection";
+const char* swtich_control = "Home/sidd_room/doorside_esp32/switches";
+const char* mqtt_username = "raspberryPI";
+const char* mqtt_password = "M.A.R.I.A.";
+const char* clientID = "sidd_room_doorside_esp32";
 
-WiFiClient espClient;
-PubSubClient client(espClient);
-long lastMsg = 0;
-char msg[50];
-int value = 0;
-
-const int PIR_pin = 2;
+//setting up clients and IO devices
+WiFiClient esp32C3Client;
+PubSubClient client(mqtt_server, 1883, esp32C3Client);
+Servo MyServo;
 
 void setup_wifi() {
   delay(10);
   // We start by connecting to a WiFi network
   Serial.println();
   Serial.print("Connecting to ");
-  Serial.println(ssid);
+  Serial.println(network_ssid);
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(network_ssid, network_password);
 
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -52,15 +63,53 @@ void reconnect() {
   }
 }
 
+void callback(char* topic, byte* message, unsigned int length) {
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+  String messageContent;
+  
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)message[i]);
+    messageContent += (char)message[i];
+  }
+  Serial.println();
+
+  if (String(topic) == swtich_control) {
+    Serial.print("Changing output to ");
+    if(messageContent == "on"){
+      Serial.println("on");
+      MyServo.write(0);
+    }
+    else if(messageContent == "off"){
+      Serial.println("off");
+      MyServo.write(120);
+    }
+  }
+}
+
 void setup() {
   Serial.begin(115200);
-
+  MyServo.attach(servo_pin);
+  pinMode(PIR_pin, INPUT);
+  sensor_output = digitalRead(PIR_pin);
+  delay(1000);
   setup_wifi();
-  client.setServer(mqtt_server, 1883);
+  if (client.connect(clientID, mqtt_username, mqtt_password)) {
+    Serial.println("Connected to MQTT Broker!");
+  }
+  else {
+    Serial.println("Connection to MQTT Broker failed…");
+  }
   client.setCallback(callback);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
+   if (!client.connected()) {
+    reconnect();
+  }
+  client.loop();
+  if(sensor_output == HIGH){
+      client.publish(PIR_data, "person detected");
+    }
 }
