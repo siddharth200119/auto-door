@@ -1,15 +1,17 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESP32Servo.h>
+#include <HTTPClient.h>
 
 const char* ssid = "Stain";
 const char* password = "b$VJ518175";
+const char* serverAddress = "192.168.1.6:6969/sidd_room/motion_detection";
 
 char* door_status = "open";
-int sensor_output;
 
-static const int servoPin = 3;
-static const int pirPin = 2;
+unsigned const int servoPin = 3;
+unsigned const int pirPin = 2;
+unsigned const int timeDelay = 10000;
 
 WebServer server(80);
 Servo MyServo;
@@ -25,8 +27,7 @@ void setup_routing() {
 //dummy functions
 
 void PIR_data(){
-    sensor_output = digitalRead(pirPin);
-    if(sensor_output == LOW){
+    if(digitalRead(pirPin) == LOW){
         server.send(200, "text/plain", "No person detected");
       }
     else{
@@ -55,19 +56,35 @@ void setup() {
    Serial.begin(115200);
    MyServo.attach(servoPin);
    pinMode(pirPin, INPUT);
+   open_door();
    delay(1000);
-
-   WiFi.mode(WIFI_STA); //Optional
+   
+   WiFi.mode(WIFI_STA);
    WiFi.begin(ssid, password);
    Serial.println("\nConnecting");
-
-   while(WiFi.status() != WL_CONNECTED){
-       delay(100);
-   }
 
    setup_routing();
 }
 
 void loop() {
   server.handleClient();  
+  if(digitalRead(pirPin) == HIGH){
+    if(WiFi.status()== WL_CONNECTED){
+      WiFiClient client;
+      HTTPClient http;
+
+      http.begin(client, serverAddress);
+
+      http.addHeader("Content-Type", "text/plain");
+      int httpResponseCode = http.POST("Person Detected");
+
+      http.end();
+      delay(timeDelay);
+    }
+    else{
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(ssid, password);
+      Serial.println("\nConnecting");
+    }
+  }
 }
