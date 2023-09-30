@@ -7,7 +7,7 @@ app = Flask(__name__)
 def motion_detection():
     if request.method == 'POST':
         print(request.json, file=sys.stderr)
-        return(request.json)
+        return("success")
 
 if __name__ =='__main__':  
     app.run(port = 6969) 
