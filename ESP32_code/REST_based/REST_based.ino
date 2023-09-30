@@ -75,9 +75,8 @@ void loop() {
 
       http.begin(client, serverAddress);
 
-      http.addHeader("Content-Type", "text/plain");
-      int httpResponseCode = http.POST("Person Detected");
-
+      http.addHeader("Content-Type", "application/json");
+      int httpResponseCode = http.POST("{\"location\":\"sidd_room\",\"sensor_position\":\"door\",\"person_detected\":\"true\"}");
       http.end();
       delay(timeDelay);
     }
