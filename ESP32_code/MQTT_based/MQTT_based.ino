@@ -18,7 +18,7 @@ const char* mqtt_username = "raspberryPI";
 const char* mqtt_password = "M.A.R.I.A.";
 const int mqtt_port = 1883;
 const char* clientID = "sidd_room_doorside_esp32";
-volatile bool person_detected = false;
+int warm_up;
 
 //setting up clients and IO devices
 WiFiClient esp32C3Client;
@@ -89,15 +89,10 @@ void callback(char* topic, byte* message, unsigned int length) {
   }
 }
 
-void IRAM_ATTR pir(){
-  person_detected = true;
-}
-
 void setup() {
   Serial.begin(115200);
   MyServo.attach(servo_pin);
   pinMode(PIR_pin, INPUT);
-  attachInterrupt(digitalPinToInterrupt(PIR_pin), pir, RISING);
   delay(1000);
   
   setup_wifi();
@@ -121,10 +116,9 @@ void loop() {
     reconnect();
   }
   client.loop();
-  if(person_detected){
+  if(digitalRead(PIR_pin) == HIGH){
       client.publish(PIR_data_topic, "person detected");
       Serial.println("person detected");
-      person_detected = false;
-      delay(5000);
+      delay(15000);
     }
 }
