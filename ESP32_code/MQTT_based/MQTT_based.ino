@@ -12,16 +12,17 @@ const char* network_ssid = "Stain";
 const char* network_password = "b$VJ518175";
 
 //MQTT
-const char* mqtt_server = "192.168.1.6";
-const char* PIR_data = "home/sidd_room/doorside_esp32/motion_detection";
-const char* swtich_control = "Home/sidd_room/doorside_esp32/switches";
+const char* mqtt_broker = "192.168.1.6";
+const char* PIR_data_topic = "home/sidd_room/doorside_esp32/motion_detection";
+const char* swtich_control_topic = "Home/sidd_room/doorside_esp32/switches";
 const char* mqtt_username = "raspberryPI";
 const char* mqtt_password = "M.A.R.I.A.";
+const int mqtt_port = 1883;
 const char* clientID = "sidd_room_doorside_esp32";
 
 //setting up clients and IO devices
 WiFiClient esp32C3Client;
-PubSubClient client(mqtt_server, 1883, esp32C3Client);
+PubSubClient client(esp32C3Client);
 Servo MyServo;
 
 void setup_wifi() {
@@ -75,7 +76,7 @@ void callback(char* topic, byte* message, unsigned int length) {
   }
   Serial.println();
 
-  if (String(topic) == swtich_control) {
+  if (String(topic) == swtich_control_topic) {
     Serial.print("Changing output to ");
     if(messageContent == "on"){
       Serial.println("on");
@@ -94,14 +95,20 @@ void setup() {
   pinMode(PIR_pin, INPUT);
   sensor_output = digitalRead(PIR_pin);
   delay(1000);
+  
   setup_wifi();
+
+  //connect to mqtt broker
+  client.setServer(mqtt_broker, mqtt_port);
+  client.setCallback(callback);
   if (client.connect(clientID, mqtt_username, mqtt_password)) {
     Serial.println("Connected to MQTT Broker!");
   }
   else {
     Serial.println("Connection to MQTT Broker failed…");
   }
-  client.setCallback(callback);
+
+  client.publish("test", "test successful!");
 }
 
 void loop() {
@@ -110,6 +117,6 @@ void loop() {
   }
   client.loop();
   if(sensor_output == HIGH){
-      client.publish(PIR_data, "person detected");
+      client.publish(PIR_data_topic, "person detected");
     }
 }
